@@ -1,5 +1,4 @@
-const SERVER_PORT = 8080;
-const SERVER_IP = "162.243.39.37";
+const SERVER_PORT = 3000;
 
 var path = require('path');
 var express = require('express');
