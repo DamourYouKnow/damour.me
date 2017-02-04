@@ -1,0 +1,10 @@
+body {
+	font-family: "Black";
+	font-size: 12pt;
+}
+
+textarea {
+	resize: none;
+	height: 100px;
+	width: 500px;
+}
