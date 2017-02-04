@@ -1,0 +1,23 @@
+body {
+	color: white;
+	font-family: "Arial";
+	font-size: 12pt;
+	background-color: #171717
+}
+
+textarea {
+	font-family: inherit;
+	font-size: inherit;
+	resize: none;
+	height: 100px;
+	width: 500px;
+}
+
+.button {
+	font-family: inherit;
+	font-size: inherit;
+}
+
+.warning {
+	color: red;
+}
