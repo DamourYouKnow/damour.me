@@ -10,26 +10,25 @@
 	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 	<link rel="icon" href="favicon.ico" type="image/x-icon">
 
-	<title>Regional Indicator Converter</title>
+	<title>Music Player</title>
+
+	<script src="/socket.io/socket.io.js"></script>
 
 	<script
 		src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js">
 	</script>
 
-	<script src="/resources/regionalIndicatorConverter.js"></script>
+	<script src="/resources/contentPlayer.js"></script>
 </head>
 
 <body>
-	<p>Convert text into regional indicator symbols.</p>
+	<div id="contentQueue">
+	</div>
 
-	<textarea id="inputArea" placeholder="Your text here..."></textarea>
+	<div id="userQueue">
+	</div>
 
-	<br/>
-
-	<button id="convertButton" class="button">Convert</button>
-
-	<br/>
-
-	<span id="outputArea"></span>
+	<div id="log">
+	</div>
 </body>
 </html>
