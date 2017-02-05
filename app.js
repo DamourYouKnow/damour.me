@@ -10,7 +10,7 @@ const ROOT = "./public/";
 var path = require("path");
 var express = require("express");
 var url = require("url");
-var youtube = require("youtube-node");
+var YouTube = require("youtube-node");
 var fileOperations = require("./fileOperations.js");
 var app = express();
 var server = require("http").createServer(app);
@@ -59,50 +59,137 @@ app.all("*", function(request, response) {
 /*
 Socket code for music player TODO move somewhere else
 */
-const YT = "https://www.youtube.com/watch?v="
-var contentPlayers = fileOperations.loadJSON("contentPlayers.json");
+const YT = "https://www.youtube.com/watch?v=";
 var contentQueue = [];
-var currentContent = "";
-var currentDuration = 0;
-
-var handleNextContent = function() {
-
-}
+var currentContent = {};
 
 io.on("connection", function(socket) {
+	var playNextContent = function() {
+		logMessage("Playing next content...");
+
+		// do nothing if queue is empty
+		if (contentQueue.length == 0) {
+			// TODO maybe throw up a panel in place of the video?
+			return;
+		}
+
+		// unqueue previous song
+		currentContent = contentQueue.pop();
+		io.emit("nextSong", currentContent.id);
+
+
+		setTimeout(playNextContent, 15000); // TODO for testing
+
+	};
+
+	var updateQueue = function() {
+		var queue = [];
+		for (var i = contentQueue.length - 1; i >=0; i--) {
+			var content = {};
+			content.title = contentQueue[i].snippet.title;
+			content.duration = convertTime(
+				contentQueue[i].contentDetails.duration
+			);
+			queue.push(content);
+		}
+
+		io.emit("updateQueue", queue);
+	};
+
+	// TODO move somewhere else
+	var convertTime = function(time) {
+		console.log(time);
+		var timeNew = {};
+		var hStr = "";
+		var mStr = "";
+		var sStr = "";
+		var c = time.length - 1;
+
+		if (time.charAt(c) == 'S') {
+			c--;
+			while (!isNaN(time.charAt(c))) {
+				sStr = time.charAt(c) + sStr;
+				c--;
+			}
+		}
+		if (time.charAt(c) == 'M') {
+			c--;
+			while (!isNaN(time.charAt(c))) {
+				mStr = time.charAt(c) + mStr;
+				c--;
+			}
+		}
+		if (time.charAt(c) == 'H') {
+			c--;
+			while (!isNaN(time.charAt(c))) {
+				hStr = time.charAt(c) + hStr;
+				c--;
+			}
+		}
+
+		h = parseInt(hStr);
+		m = parseInt(mStr);
+		s = parseInt(sStr);
+		if (isNaN(h)) h = 0;
+		if (isNaN(m)) m = 0;
+		if (isNaN(s)) s = 0;
+		timeNew.hours = h;
+		timeNew.minutes = m;
+		timeNew.seconds = s;
+		timeNew.millis = (s * 1000) + (m * 60 * 1000) + (h * 60 * 60 * 1000);
+		console.log(timeNew);
+		return timeNew;
+	};
+
+
+
 	logMessage("Connection received");
+	updateQueue();
 
 	/*
 	Handler for client adding song to playlist
 	*/
-	socket.on("addSong", function(data) {
-		var urlObj = url.parse(link, true);
-		var id = urlObj.query.v;
+	socket.on("addSong", function(link) {
+		console.log("Request to add " + link + " to queue");
 
-		youTube.getById('HcwTxRuq-uk', function(error, result) {
-			if (error) {
-				socket.emit("message", {message: "Error finding content."});
+		var urlObj = url.parse(link, true);
+
+		if (!urlObj.query.hasOwnProperty("v")) {
+			console.log("URL does not have query");
+			socket.emit("message", "Error finding content.");
+			return;
+		}
+
+		var id = urlObj.query.v;
+		console.log("Content ID: " + id);
+
+		var yt = new YouTube();
+		var key = fileOperations.loadJSON("ytkey.json").key
+		yt.setKey(key);
+		yt.getById(id, function(error, result) {
+			console.log(result);
+
+			if (error || result.items.length == 0) {
+				socket.emit("message", "Error finding content.");
+				console.log(error);
+			}
+			else if (!result.items[0].status.embeddable) {
+				socket.emit("message", "Content not embeddable.");
 			}
 			else {
-				contentQueue.unshift(id);
+				logMessage(
+					"Adding video " + result.items[0].snippet.title
+				);
+
+				contentQueue.unshift(result.items[0]);
+				updateQueue();
+
 				// play right away if first in queue
 				if (contentQueue.length == 1) {
-					io.emit("nextSong", {contentId: id});
-					currentContent = contentQueue.pop();
-					//currentDuration =
-				}
-				if (contentQueue.length >= 1) {
-					//setTimeout(handleNextContent,
+					playNextContent();
 				}
 			}
 		});
-	});
-
-	/*
-	Handler for client removing song from playlist
-	*/
-	socket.on("removeSong", function(data) {
-
 	});
 
 	/*
@@ -111,8 +198,8 @@ io.on("connection", function(socket) {
 	socket.on("disconnect", function(data) {
 		logMessage("Client disconnected");
 	});
-
 });
+
 
 function logMessage(message) {
 	console.log(new Date() + ": " + message);

@@ -13,6 +13,12 @@ textarea {
 	width: 500px;
 }
 
+input {
+	font-family: inherit;
+	font-size: inherit;
+	width: "500";
+}
+
 .button {
 	font-family: inherit;
 	font-size: inherit;
