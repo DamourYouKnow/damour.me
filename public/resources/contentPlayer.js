@@ -29,10 +29,7 @@ $(document).ready(function() {
 
 		console.log(linkStr);
 
-		$("#contentPlayer").empty();
-		$("#contentPlayer").html(
-			"<iframe width='800' height='450' src='" + linkStr + "'></iframe>"
-		);
+		$("#contentPlayer").attr({"src": linkStr});
 	});
 
 	socket.on("updateQueue", function(queue) {
