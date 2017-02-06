@@ -62,10 +62,13 @@ Socket code for music player TODO move somewhere else
 const YT = "https://www.youtube.com/watch?v=";
 var contentQueue = [];
 var currentContent = {};
+var idQueue = [];
+var currentStart = 0;
 
 io.on("connection", function(socket) {
 	var handleNextContent = function() {
 		contentQueue.pop();
+		idQueue.pop();
 		playNextContent();
 		updateQueue();
 	};
@@ -82,9 +85,13 @@ io.on("connection", function(socket) {
 		// unqueue previous song
 		currentContent = contentQueue[contentQueue.length - 1];
 		currentTime = convertTime(currentContent.contentDetails.duration);
-		io.emit("nextContent", currentContent.id);
+		currentStart = Date.now();
 
-		setTimeout(handleNextContent, currentTime.millis);
+		var startTime = {};
+		startTime.millis = 0;
+		io.emit("nextContent", {id: currentContent.id, time: startTime});
+
+		setTimeout(handleNextContent, currentTime.millis + 3000);
 	};
 
 	var updateQueue = function() {
@@ -147,6 +154,13 @@ io.on("connection", function(socket) {
 	logMessage("Connection received");
 	updateQueue();
 
+	// send current song
+	if (contentQueue.length >= 1) {
+		var startTime = {};
+		startTime.millis = Date.now() - currentStart;
+		socket.emit("nextContent", {id: currentContent.id, time: startTime});
+	}
+
 	/*
 	Handler for client adding song to playlist
 	*/
@@ -172,6 +186,9 @@ io.on("connection", function(socket) {
 				socket.emit("message", "Error finding content.");
 				console.log(error);
 			}
+			if (idQueue.indexOf(result.items[0].id) >= 0) {
+				socket.emit("message", "Already in queue.");
+			}
 			else if (!result.items[0].status.embeddable) {
 				socket.emit("message", "Content not embeddable.");
 			}
@@ -182,6 +199,7 @@ io.on("connection", function(socket) {
 
 				console.log("length " + contentQueue.length);
 				contentQueue.unshift(result.items[0]);
+				idQueue.unshift(result.items[0].id);
 				console.log("length " + contentQueue.length);
 				updateQueue();
 

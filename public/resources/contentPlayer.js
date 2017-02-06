@@ -16,18 +16,23 @@ $(document).ready(function() {
 
 	});
 
-	socket.on("nextContent", function(id) {
-		console.log(id);
+	socket.on("nextContent", function(data) {
+		console.log(data.id);
 		console.log("Playing next content");
+
+
+		var linkStr = "https://www.youtube.com/embed/" + data.id +
+			"?controls=0&autoplay=1";
+
+		var seconds = Math.round(data.time.millis / 1000);
+		linkStr = linkStr + "&start=" + seconds;
+
+		console.log(linkStr);
+
 		$("#contentPlayer").empty();
 		$("#contentPlayer").html(
-			"<iframe width='420' height='315'"
-				+ "src='https://www.youtube.com/embed/" + id
-				+ "?controls=0&autoplay=1'>"
-				+ "</iframe>"
+			"<iframe width='800' height='450' src='" + linkStr + "'></iframe>"
 		);
-
-
 	});
 
 	socket.on("updateQueue", function(queue) {
