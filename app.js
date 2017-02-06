@@ -6,6 +6,7 @@ author: DamourYouKnow
 
 const SERVER_PORT = 3000;
 const ROOT = "./public/";
+const MAX_TIME = 10 * 60 * 1000;
 
 var path = require("path");
 var express = require("express");
@@ -186,8 +187,15 @@ io.on("connection", function(socket) {
 				socket.emit("message", "Error finding content.");
 				console.log(error);
 			}
-			if (idQueue.indexOf(result.items[0].id) >= 0) {
+			// check for dupe
+			else if (idQueue.indexOf(result.items[0].id) >= 0) {
 				socket.emit("message", "Already in queue.");
+			}
+			else if (
+				convertTime(result.items[0].contentDetails.duration).millis
+				> MAX_TIME) {
+
+				socket.emit("message", "Content longer than 10 minutes");
 			}
 			else if (!result.items[0].status.embeddable) {
 				socket.emit("message", "Content not embeddable.");
