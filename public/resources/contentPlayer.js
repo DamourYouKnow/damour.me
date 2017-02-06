@@ -16,14 +16,22 @@ $(document).ready(function() {
 
 	});
 
-	socket.on("nextSong", function() {
+	socket.on("nextContent", function(id) {
+		console.log(id);
 		console.log("Playing next content");
+		$("#contentPlayer").empty();
+		$("#contentPlayer").html(
+			"<iframe width='420' height='315'"
+				+ "src='https://www.youtube.com/embed/" + id
+				+ "?controls=0&autoplay=1'>"
+				+ "</iframe>"
+		);
+
 
 	});
 
 	socket.on("updateQueue", function(queue) {
 		console.log("Updating queue");
-		console.log(queue);
 		$("#contentQueue").html("<p>Current queue:<\p>");
 		for (var i = 0; i < queue.length; i++) {
 			$("#contentQueue").append("<p>" + queue[i].title + "<\p>");
@@ -38,7 +46,6 @@ $(document).ready(function() {
 	});
 
 	$("#inputArea").keydown(function(event) {
-		console.log("keypress");
 		if (event.keyCode === 13) {
 			socket.emit("addSong", $(this).val());
 		}

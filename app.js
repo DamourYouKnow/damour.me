@@ -64,22 +64,27 @@ var contentQueue = [];
 var currentContent = {};
 
 io.on("connection", function(socket) {
-	var playNextContent = function() {
-		logMessage("Playing next content...");
+	var handleNextContent = function() {
+		contentQueue.pop();
+		playNextContent();
+		updateQueue();
+	};
 
+	var playNextContent = function() {
 		// do nothing if queue is empty
 		if (contentQueue.length == 0) {
 			// TODO maybe throw up a panel in place of the video?
 			return;
 		}
 
+		logMessage("Playing next content...");
+
 		// unqueue previous song
-		currentContent = contentQueue.pop();
-		io.emit("nextSong", currentContent.id);
+		currentContent = contentQueue[contentQueue.length - 1];
+		currentTime = convertTime(currentContent.contentDetails.duration);
+		io.emit("nextContent", currentContent.id);
 
-
-		setTimeout(playNextContent, 15000); // TODO for testing
-
+		setTimeout(handleNextContent, currentTime.millis);
 	};
 
 	var updateQueue = function() {
@@ -98,7 +103,6 @@ io.on("connection", function(socket) {
 
 	// TODO move somewhere else
 	var convertTime = function(time) {
-		console.log(time);
 		var timeNew = {};
 		var hStr = "";
 		var mStr = "";
@@ -137,11 +141,8 @@ io.on("connection", function(socket) {
 		timeNew.minutes = m;
 		timeNew.seconds = s;
 		timeNew.millis = (s * 1000) + (m * 60 * 1000) + (h * 60 * 60 * 1000);
-		console.log(timeNew);
 		return timeNew;
 	};
-
-
 
 	logMessage("Connection received");
 	updateQueue();
@@ -167,8 +168,6 @@ io.on("connection", function(socket) {
 		var key = fileOperations.loadJSON("ytkey.json").key
 		yt.setKey(key);
 		yt.getById(id, function(error, result) {
-			console.log(result);
-
 			if (error || result.items.length == 0) {
 				socket.emit("message", "Error finding content.");
 				console.log(error);
@@ -181,11 +180,14 @@ io.on("connection", function(socket) {
 					"Adding video " + result.items[0].snippet.title
 				);
 
+				console.log("length " + contentQueue.length);
 				contentQueue.unshift(result.items[0]);
+				console.log("length " + contentQueue.length);
 				updateQueue();
 
 				// play right away if first in queue
 				if (contentQueue.length == 1) {
+					console.log("playing first in queue");
 					playNextContent();
 				}
 			}
