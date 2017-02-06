@@ -22,7 +22,7 @@ $(document).ready(function() {
 
 
 		var linkStr = "https://www.youtube.com/embed/" + data.id +
-			"?controls=0&autoplay=1";
+			"?autoplay=1";
 
 		var seconds = Math.round(data.time.millis / 1000);
 		linkStr = linkStr + "&start=" + seconds;
