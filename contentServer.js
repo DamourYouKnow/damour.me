@@ -1,17 +1,49 @@
 var exports = module.exports = {};
 var fileOperations = require("./fileOperations.js");
+var path = require("path");
 var url = require("url");
 var YouTube = require("youtube-node");
-var app = require("./app.js");
-var io = require("socket.io")(app.server);
+var main = require("./app.js");
+var server = main.server;
+var app = main.app;
+var io = require("socket.io")(server);
 
+const ROOT = "./public/";
 const MAX_TIME = 10 * 60 * 1000;
 const YT = "https://www.youtube.com/watch?v=";
+
+var rooms = {};
 
 var contentQueue = [];
 var currentContent = {};
 var idQueue = [];
 var currentStart = 0;
+
+app.get("/player*", function(request, response) {
+	response.sendFile(path.join(__dirname, ROOT + "contentPlayer.html"));
+
+	// check for id
+	var urlObj = url.parse(request.url, true);
+	var id = urlObj.path.substring("/player/".length, urlObj.path.length);
+	console.log(id);
+	if (id in rooms) {
+
+	}
+
+	// create new room if no id
+	else {
+		var newRoom = {
+			"contentQueue": [],
+			"idQueue": [],
+			"currentContent": {},
+			"currentStart": 0,
+			"userCount": 1,
+			"skipVotes": 0,
+			"creator": ""
+		};
+		rooms[id] = newRoom;
+	}
+});
 
 io.on("connection", function(socket) {
 	var handleNextContent = function() {
@@ -66,22 +98,22 @@ io.on("connection", function(socket) {
 		socket.emit("nextContent", {id: currentContent.id, time: startTime});
 	}
 
+	socket.on("skip", function() {
+
+	});
+
 	/*
 	Handler for client adding song to playlist
 	*/
 	socket.on("addSong", function(link) {
-		console.log("Request to add " + link + " to queue");
-
 		var urlObj = url.parse(link, true);
 
 		if (!urlObj.query.hasOwnProperty("v")) {
-			console.log("URL does not have query");
 			socket.emit("message", "Error finding content.");
 			return;
 		}
 
 		var id = urlObj.query.v;
-		console.log("Content ID: " + id);
 
 		var yt = new YouTube();
 		var key = fileOperations.loadJSON("ytkey.json").key
@@ -89,7 +121,7 @@ io.on("connection", function(socket) {
 		yt.getById(id, function(error, result) {
 			if (error || result.items.length == 0) {
 				socket.emit("message", "Error finding content.");
-				console.log(error);
+				logMessage(error);
 			}
 			// check for dupe
 			else if (idQueue.indexOf(result.items[0].id) >= 0) {
@@ -109,15 +141,12 @@ io.on("connection", function(socket) {
 					"Adding video " + result.items[0].snippet.title
 				);
 
-				console.log("length " + contentQueue.length);
 				contentQueue.unshift(result.items[0]);
 				idQueue.unshift(result.items[0].id);
-				console.log("length " + contentQueue.length);
 				updateQueue();
 
 				// play right away if first in queue
 				if (contentQueue.length == 1) {
-					console.log("playing first in queue");
 					playNextContent();
 				}
 			}
@@ -179,4 +208,14 @@ function convertTime(time) {
 
 function logMessage(message) {
 	console.log(new Date() + ": " + message);
+};
+
+function createId(len) {
+    var text = "";
+    var possible = "patmorinPATMORIN";
+
+    for( var i=0; i < len; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
 };

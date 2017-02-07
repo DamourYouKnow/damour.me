@@ -13,6 +13,7 @@ var path = require("path");
 var express = require("express");
 var url = require("url");
 var app = express();
+exports.app = app;
 var server = require("http").createServer(app);
 exports.server = server;
 var contentServer = require("./contentServer.js");
@@ -32,10 +33,6 @@ Serve index page
 */
 app.get("/", function(request, response) {
 	response.sendFile(path.join(__dirname, ROOT + "index.html"));
-});
-
-app.get("/player", function(request, response) {
-	response.sendFile(path.join(__dirname, ROOT + "contentPlayer.html"));
 });
 
 app.get("/regionalIndicatorConverter", function(request, response) {
