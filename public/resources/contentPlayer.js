@@ -20,7 +20,6 @@ $(document).ready(function() {
 		console.log(data.id);
 		console.log("Playing next content");
 
-
 		var linkStr = "https://www.youtube.com/embed/" + data.id +
 			"?autoplay=1";
 
@@ -45,11 +44,13 @@ $(document).ready(function() {
 	// add song to queue if add button is pressed
 	$("#queueButton").click(function() {
 		socket.emit("addSong", $("#inputArea").val());
+		$("#inputArea").val("");
 	});
 
 	$("#inputArea").keydown(function(event) {
 		if (event.keyCode === 13) {
 			socket.emit("addSong", $(this).val());
+			$("#inputArea").val("");
 		}
 	});
 });
