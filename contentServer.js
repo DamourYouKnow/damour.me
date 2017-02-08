@@ -158,7 +158,7 @@ io.on("connection", function(socket) {
 				socket.emit("message", "Content longer than 10 minutes.");
 			}
 			// check if livestream
-			else if (vid.snippet.liveBroadcastContent = "none") {
+			else if (vid.snippet.liveBroadcastContent != "none") {
 				socket.emit("message", "Content is a livestream.");
 			}
 			// check if video not embeddable
