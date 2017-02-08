@@ -32,11 +32,9 @@ $(document).ready(function() {
 	});
 
 	socket.on("newRoom", function(id) {
-		$("#roomTitle").html(
-			"<p>Share this room: " + window.location.protocol + "//"
-				+ window.location.hostname + "/player?room="
-				+ id + "</p>"
-		);
+		window.location.href = window.location.protocol + "//"
+			+ window.location.hostname + "/player?room="
+			+ id;
 	});
 
 	socket.on("message", function(message) {
