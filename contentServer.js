@@ -18,33 +18,8 @@ var key = fileOperations.loadJSON("ytkey.json").key
 var rooms = {};
 var allUsers = {};
 
-app.get("/player*", function(request, response) {
+app.get("/player", function(request, response) {
 	response.sendFile(path.join(__dirname, ROOT + "contentPlayer.html"));
-
-	// check for id
-	var urlObj = url.parse(request.url, true);
-	var id = urlObj.path.substring("/player/".length, urlObj.path.length);
-
-	if (id in rooms) {
-
-	}
-
-	// create new room if no id
-	else {
-		logMessage("Creating new room " + id);
-		var newRoom = {
-			"id": createId(ROOM_ID_LENGTH),
-			"contentQueue": [],
-			"idQueue": [],
-			"currentContent": {},
-			"currentStart": 0,
-			"users": {},
-			"userCount": 1,
-			"skipVotes": 0,
-			"creator": ""
-		};
-		rooms[id] = newRoom;
-	}
 });
 
 io.on("connection", function(socket) {
@@ -64,41 +39,85 @@ io.on("connection", function(socket) {
 			return;
 		}
 
-		logMessage("Playing next content...");
-		room.currentContent = room.contentQueue[contentQueue.length - 1];
+		// get next song in queue
+		room.currentContent = room.contentQueue[room.contentQueue.length - 1];
 		room.currentDuration = convertTime(
-			currentContent.contentDetails.duration
+			room.currentContent.contentDetails.duration
 		);
 		room.currentStart = Date.now();
 
 		var startTime = {};
 		startTime.millis = 0;
-		io.emit(
-			"nextContent",
-			{"id": room.currentContent.id, "time": startTime}
-		);
 
-		setTimeout(handleNextContent, currentDuration.millis + 3000, room);
+		// send next song to each user in room
+		for (var userKey in room.users) {
+			room.users[userKey].socket.emit(
+				"nextContent",
+				{"id": room.currentContent.id, "time": startTime}
+			);
+		}
+
+		setTimeout(handleNextContent, room.currentDuration.millis + 3000, room);
 	};
 
 	var updateQueue = function(room) {
-		for each (user in room) {
-			console.log(user);
-			user.socket.emit("updateQueue", room.idQueue);
+		var queue = [];
+
+		for (var i =  room.contentQueue.length - 1; i >= 0; i--) {
+			var next = {"title": room.contentQueue[i].snippet.title};
+			queue.push(next);
+		}
+
+		for (var userKey in room.users) {
+			room.users[userKey].socket.emit("updateQueue", queue);
 		}
 	};
 
-	updateQueue();
-
-	// send current song
-	if (contentQueue.length >= 1) {
-		var startTime = {};
-		startTime.millis = Date.now() - currentStart;
-		socket.emit("nextContent", {id: currentContent.id, time: startTime});
-	}
-
 	socket.on("skip", function() {
 
+	});
+
+	socket.on("joinRoom", function(roomId) {
+		if (roomId in rooms) {
+			logMessage("User " + socket.id + " joined room " + roomId);
+			var room = rooms[roomId];
+			room.users[socket.id] = socket.user;
+			socket.user.room = room;
+
+			// send current content for room
+			if (room.contentQueue.length >= 1) {
+				var content = {
+					"id": room.currentContent.id,
+					"time": {"millis": Date.now() - room.currentStart}
+				};
+				socket.emit("nextContent", content);
+			}
+
+			updateQueue(room);
+			socket.emit("joinRoomSuccess");
+		}
+		else {
+			socket.emit("joinRoomFailed");
+		}
+	});
+
+	socket.on("createRoom", function() {
+		var id = createId(ROOM_ID_LENGTH);
+		logMessage("Creating room " + id);
+		var newRoom = {
+			"contentQueue": [],
+			"idQueue": [],
+			"currentContent": {},
+			"currentStart": 0,
+			"users": {},
+			"userCount": 1,
+			"skipVotes": 0,
+			"creator": ""
+		};
+		rooms[id] = newRoom;
+		newRoom.users[socket.id] = socket.user;
+		socket.user.room = newRoom;
+		socket.emit("newRoom", id);
 	});
 
 	/*
@@ -106,6 +125,10 @@ io.on("connection", function(socket) {
 	*/
 	socket.on("addSong", function(link) {
 		var room = socket.user.room;
+		if (room == undefined) {
+			socket.emit("message", "Server error.");
+			return;
+		}
 
 		// get song id from link
 		// TODO handle youtube.be/VIDEO_ID links
@@ -140,14 +163,13 @@ io.on("connection", function(socket) {
 			}
 			else {
 				logMessage("Adding video " + vid.snippet.title);
-
 				room.contentQueue.unshift(vid);
-				room.idQueue.unshift(vid);
-				updateQueue();
+				room.idQueue.unshift(vid.id);
+				updateQueue(room);
 
 				// play right away if first in queue
-				if (contentQueue.length == 1) {
-					playNextContent();
+				if (room.contentQueue.length == 1) {
+					playNextContent(room);
 				}
 			}
 		});
@@ -170,7 +192,7 @@ function registerUser(socket) {
 
 function createId(len) {
 	var text = "";
-	var possible = "abcdefghijklmnopqrstuvwxyz";
+	var possible = "0123456789abcdefABCDEF";
 
 	for( var i=0; i < len; i++ )
 		text += possible.charAt(Math.floor(Math.random() * possible.length));
