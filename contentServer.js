@@ -9,15 +9,14 @@ var app = main.app;
 var io = require("socket.io")(server);
 
 const ROOT = "./public/";
+const ROOM_ID_LENGTH = 5;
 const MAX_TIME = 10 * 60 * 1000;
 const YT = "https://www.youtube.com/watch?v=";
 
-var rooms = {};
+var key = fileOperations.loadJSON("ytkey.json").key
 
-var contentQueue = [];
-var currentContent = {};
-var idQueue = [];
-var currentStart = 0;
+var rooms = {};
+var allUsers = {};
 
 app.get("/player*", function(request, response) {
 	response.sendFile(path.join(__dirname, ROOT + "contentPlayer.html"));
@@ -25,18 +24,21 @@ app.get("/player*", function(request, response) {
 	// check for id
 	var urlObj = url.parse(request.url, true);
 	var id = urlObj.path.substring("/player/".length, urlObj.path.length);
-	console.log(id);
+
 	if (id in rooms) {
 
 	}
 
 	// create new room if no id
 	else {
+		logMessage("Creating new room " + id);
 		var newRoom = {
+			"id": createId(ROOM_ID_LENGTH),
 			"contentQueue": [],
 			"idQueue": [],
 			"currentContent": {},
 			"currentStart": 0,
+			"users": {},
 			"userCount": 1,
 			"skipVotes": 0,
 			"creator": ""
@@ -46,49 +48,46 @@ app.get("/player*", function(request, response) {
 });
 
 io.on("connection", function(socket) {
-	var handleNextContent = function() {
-		contentQueue.pop();
-		idQueue.pop();
-		playNextContent();
-		updateQueue();
+	// create new user object for socket
+	registerUser(socket);
+
+	var handleNextContent = function(room) {
+		room.contentQueue.pop();
+		room.idQueue.pop();
+		playNextContent(room);
+		updateQueue(room);
 	};
 
-	var playNextContent = function() {
+	var playNextContent = function(room) {
 		// do nothing if queue is empty
-		if (contentQueue.length == 0) {
-			// TODO maybe throw up a panel in place of the video?
+		if (room.contentQueue.length == 0) {
 			return;
 		}
 
 		logMessage("Playing next content...");
-
-		// unqueue previous song
-		currentContent = contentQueue[contentQueue.length - 1];
-		currentTime = convertTime(currentContent.contentDetails.duration);
-		currentStart = Date.now();
+		room.currentContent = room.contentQueue[contentQueue.length - 1];
+		room.currentDuration = convertTime(
+			currentContent.contentDetails.duration
+		);
+		room.currentStart = Date.now();
 
 		var startTime = {};
 		startTime.millis = 0;
-		io.emit("nextContent", {id: currentContent.id, time: startTime});
+		io.emit(
+			"nextContent",
+			{"id": room.currentContent.id, "time": startTime}
+		);
 
-		setTimeout(handleNextContent, currentTime.millis + 3000);
+		setTimeout(handleNextContent, currentDuration.millis + 3000, room);
 	};
 
-	var updateQueue = function() {
-		var queue = [];
-		for (var i = contentQueue.length - 1; i >=0; i--) {
-			var content = {};
-			content.title = contentQueue[i].snippet.title;
-			content.duration = convertTime(
-				contentQueue[i].contentDetails.duration
-			);
-			queue.push(content);
+	var updateQueue = function(room) {
+		for each (user in room) {
+			console.log(user);
+			user.socket.emit("updateQueue", room.idQueue);
 		}
-
-		io.emit("updateQueue", queue);
 	};
 
-	logMessage("Connection received");
 	updateQueue();
 
 	// send current song
@@ -106,43 +105,44 @@ io.on("connection", function(socket) {
 	Handler for client adding song to playlist
 	*/
 	socket.on("addSong", function(link) {
-		var urlObj = url.parse(link, true);
+		var room = socket.user.room;
 
+		// get song id from link
+		// TODO handle youtube.be/VIDEO_ID links
+		var urlObj = url.parse(link, true);
 		if (!urlObj.query.hasOwnProperty("v")) {
 			socket.emit("message", "Error finding content.");
 			return;
 		}
-
 		var id = urlObj.query.v;
 
 		var yt = new YouTube();
-		var key = fileOperations.loadJSON("ytkey.json").key
 		yt.setKey(key);
 		yt.getById(id, function(error, result) {
-			if (error || result.items.length == 0) {
+			var vid = result.items[0];
+
+			// check if song not found
+			if (error || vid.length == 0) {
 				socket.emit("message", "Error finding content.");
 				logMessage(error);
 			}
 			// check for dupe
-			else if (idQueue.indexOf(result.items[0].id) >= 0) {
+			else if (room.idQueue.indexOf(vid.id) >= 0) {
 				socket.emit("message", "Already in queue.");
 			}
-			else if (
-				convertTime(result.items[0].contentDetails.duration).millis
-				> MAX_TIME) {
-
+			// check if over max time
+			else if (convertTime(vid.contentDetails.duration).millis>MAX_TIME) {
 				socket.emit("message", "Content longer than 10 minutes");
 			}
-			else if (!result.items[0].status.embeddable) {
+			// check if video not embeddable
+			else if (!vid.status.embeddable) {
 				socket.emit("message", "Content not embeddable.");
 			}
 			else {
-				logMessage(
-					"Adding video " + result.items[0].snippet.title
-				);
+				logMessage("Adding video " + vid.snippet.title);
 
-				contentQueue.unshift(result.items[0]);
-				idQueue.unshift(result.items[0].id);
+				room.contentQueue.unshift(vid);
+				room.idQueue.unshift(vid);
 				updateQueue();
 
 				// play right away if first in queue
@@ -160,6 +160,23 @@ io.on("connection", function(socket) {
 		logMessage("Client disconnected");
 	});
 });
+
+function registerUser(socket) {
+	logMessage("Registering new user " + socket.id);
+	var newUser = {"socket": socket, "room": null};
+	allUsers[socket.id] = newUser;
+	socket.user = newUser;
+}
+
+function createId(len) {
+	var text = "";
+	var possible = "abcdefghijklmnopqrstuvwxyz";
+
+	for( var i=0; i < len; i++ )
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+	return text;
+}
 
 /*
 Creates a time object from YouTube's duration string
@@ -208,14 +225,4 @@ function convertTime(time) {
 
 function logMessage(message) {
 	console.log(new Date() + ": " + message);
-};
-
-function createId(len) {
-    var text = "";
-    var possible = "patmorinPATMORIN";
-
-    for( var i=0; i < len; i++ )
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-};
+}

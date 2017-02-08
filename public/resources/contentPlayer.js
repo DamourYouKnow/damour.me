@@ -39,14 +39,13 @@ $(document).ready(function() {
 		}
 	});
 
-	// add song to queue if enter is pressed
-
 	// add song to queue if add button is pressed
 	$("#queueButton").click(function() {
 		socket.emit("addSong", $("#inputArea").val());
 		$("#inputArea").val("");
 	});
 
+	// add song to queue if enter is pressed
 	$("#inputArea").keydown(function(event) {
 		if (event.keyCode === 13) {
 			socket.emit("addSong", $(this).val());
