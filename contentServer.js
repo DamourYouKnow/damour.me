@@ -10,7 +10,7 @@ var io = require("socket.io")(server);
 
 const ROOT = "./public/";
 const ROOM_ID_LENGTH = 5;
-const MAX_TIME = 10 * 60 * 1000;
+const MAX_TIME = 10 * 60 * 60 * 1000;
 const YT = "https://www.youtube.com/watch?v=";
 
 var key = fileOperations.loadJSON("ytkey.json").key
