@@ -80,8 +80,13 @@ io.on("connection", function(socket) {
 		var room = socket.user.room;
 		var ip = socket.request.connection.remoteAddress;
 
+		if (room == undefined){
+			logMessage("this is really bad");	
+			return;
+		} 
+
 		if (room.skipVotes >= (room.skipIps.size / 2) + 1
-			|| room.skipIps.size == 1) {
+			|| room.userCount == 1) {
 			handleNextContent(room);
 		}
 
@@ -106,7 +111,7 @@ io.on("connection", function(socket) {
 			);
 
 			if (room.skipVotes >= (room.skipIps.size / 2) + 1
-				|| room.skipIps.size == 1) {
+				|| room.userCount == 1) {
 				handleNextContent(room);
 			}
 		}
