@@ -27,6 +27,7 @@ io.on("connection", function(socket) {
 	registerUser(socket);
 
 	var handleNextContent = function(room) {
+		clearTimeout(room.timer);
 		room.contentQueue.pop();
 		room.idQueue.pop();
 		playNextContent(room);
@@ -60,7 +61,11 @@ io.on("connection", function(socket) {
 			room.users[userKey].skipVoted = false;
 		}
 
-		setTimeout(handleNextContent, room.currentDuration.millis + 3000, room);
+		room.timer = setTimeout(
+			handleNextContent,
+			room.currentDuration.millis + 3000,
+			room
+		);
 	};
 
 	var updateQueue = function(room) {
@@ -81,13 +86,14 @@ io.on("connection", function(socket) {
 		var ip = socket.request.connection.remoteAddress;
 
 		if (room == undefined){
-			logMessage("this is really bad");	
+			logMessage("this is really bad");
 			return;
-		} 
+		}
 
 		if (room.skipVotes >= (room.skipIps.size / 2) + 1
 			|| room.userCount == 1) {
 			handleNextContent(room);
+			return;
 		}
 
 		// room owner can bypass skip vote
@@ -164,7 +170,8 @@ io.on("connection", function(socket) {
 			"userCount": 1,
 			"skipVotes": 0,
 			"skipIps": new Set(),
-			"creator": null
+			"creator": null,
+			"timer": null
 		};
 		rooms[id] = newRoom;
 		newRoom.users[socket.id] = socket.user;
