@@ -100,7 +100,8 @@ io.on("connection", function(socket) {
 				+ ((room.skipIps.size / 2) + 1) + " skip votes"
 			);
 
-			if (room.skipVotes >= (room.skipIps.size / 2) + 1) {
+			if (room.skipVotes >= (room.skipIps.size / 2) + 1
+				|| room.skipIps.size == 1) {
 				handleNextContent(room);
 			}
 		}
