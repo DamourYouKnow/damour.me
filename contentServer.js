@@ -80,6 +80,11 @@ io.on("connection", function(socket) {
 		var room = socket.user.room;
 		var ip = socket.request.connection.remoteAddress;
 
+		if (room.skipVotes >= (room.skipIps.size / 2) + 1
+			|| room.skipIps.size == 1) {
+			handleNextContent(room);
+		}
+
 		// room owner can bypass skip vote
 		if (room.creator == socket.user) {
 			// TODO handleNextContent(room);
