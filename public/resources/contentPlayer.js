@@ -25,9 +25,8 @@ $(document).ready(function() {
 	socket.on("joinRoomSuccess", function() {
 		console.log("Join successfull");
 		$("#roomTitle").html(
-			"<p>Share this room: " + window.location.protocol +
-				+ "//" +  "/player?room="
-				+ idFromUrl + "</p>"
+			"<p>Share this room: " + window.location.href
+				+ "</p>"
 		);
 	});
 
