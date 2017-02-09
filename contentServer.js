@@ -155,7 +155,11 @@ io.on("connection", function(socket) {
 			}
 			// check if over max time
 			else if (convertTime(vid.contentDetails.duration).millis>MAX_TIME) {
-				socket.emit("message", "Content longer than 10 minutes");
+				socket.emit("message", "Content longer than 10 minutes.");
+			}
+			// check if livestream
+			else if (vid.snippet.liveBroadcastContent != "none") {
+				socket.emit("message", "Content is a livestream.");
 			}
 			// check if video not embeddable
 			else if (!vid.status.embeddable) {

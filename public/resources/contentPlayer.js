@@ -25,7 +25,7 @@ $(document).ready(function() {
 	socket.on("joinRoomSuccess", function() {
 		console.log("Join successfull");
 		$("#roomTitle").html(
-			"<p>Share this room:" + window.location.protocol + "//"
+			"<p>Share this room: " + window.location.protocol + "//"
 				+ window.location.hostname + "/player?room="
 				+ idFromUrl + "</p>"
 		);
