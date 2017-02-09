@@ -49,12 +49,15 @@ io.on("connection", function(socket) {
 		var startTime = {};
 		startTime.millis = 0;
 
-		// send next song to each user in room
+		// send next song to each user in room and reset skips
 		for (var userKey in room.users) {
 			room.users[userKey].socket.emit(
 				"nextContent",
 				{"id": room.currentContent.id, "time": startTime}
 			);
+			room.skipVotes = 0;
+			room.skipIps = new Set();
+			room.users[userKey].skipVoted = false;
 		}
 
 		setTimeout(handleNextContent, room.currentDuration.millis + 3000, room);
@@ -75,14 +78,31 @@ io.on("connection", function(socket) {
 
 	socket.on("skip", function() {
 		var room = socket.user.room;
+		var ip = socket.request.connection.remoteAddress;
 
 		// room owner can bypass skip vote
 		if (room.creator == socket.user) {
-			handleNextContent(room);
+			// TODO handleNextContent(room);
 		}
+
+		// ensure you can only skip once
+		if (socket.user.skipVoted || room.skipIps.has(ip)) {
+			socket.emit("message", "You can only vote to skip once.");
+			return;
+		}
+
 		else {
 			room.skipVotes++;
-			// TODO detmermine vote conditions for skip
+			room.skipIps.add(ip);
+			socket.user.skipVoted = true;
+			logMessage(
+				room.skipVotes + "/"
+				+ ((room.skipIps.size / 2) + 1) + " skip votes"
+			);
+
+			if (room.skipVotes >= (room.skipIps.size / 2) + 1) {
+				handleNextContent(room);
+			}
 		}
 	});
 
@@ -92,6 +112,12 @@ io.on("connection", function(socket) {
 			var room = rooms[roomId];
 			room.users[socket.id] = socket.user;
 			socket.user.room = room;
+
+			// set new owner if none exist
+			if (room.creator == null) {
+				room.creator = socket.user;
+				logMessage("Creating new room owner.");
+			}
 
 			// send current content for room
 			if (room.contentQueue.length >= 1) {
@@ -103,6 +129,7 @@ io.on("connection", function(socket) {
 			}
 
 			updateQueue(room);
+			room.userCount++;
 			socket.emit("joinRoomSuccess");
 		}
 		else {
@@ -112,6 +139,10 @@ io.on("connection", function(socket) {
 
 	socket.on("createRoom", function() {
 		var id = createId(ROOM_ID_LENGTH);
+		while (id in rooms) {
+			id = createId(ROOM_ID_LENGTH);
+		}
+
 		logMessage("Creating room " + id);
 		var newRoom = {
 			"contentQueue": [],
@@ -121,11 +152,11 @@ io.on("connection", function(socket) {
 			"users": {},
 			"userCount": 1,
 			"skipVotes": 0,
-			"creator": {}
+			"skipIps": new Set(),
+			"creator": null
 		};
 		rooms[id] = newRoom;
 		newRoom.users[socket.id] = socket.user;
-		newRoom.creator = socket.user;
 		socket.user.room = newRoom;
 		socket.emit("newRoom", id);
 	});
@@ -194,6 +225,16 @@ io.on("connection", function(socket) {
 	*/
 	socket.on("disconnect", function(data) {
 		logMessage("Client disconnected");
+		if (socket.user.room != null) {
+			socket.user.room.userCount--;
+			if (socket.user.room.creator == socket.user) {
+				socket.user.room.creator = null;
+				logMessage("Transfering room ownership");
+				for (var userKey in socket.user.room.users) {
+					socket.user.room.creator = socket.user.room.users[userKey];
+				}
+			}
+		}
 	});
 });
 
@@ -202,7 +243,8 @@ function registerUser(socket) {
 	var newUser = {
 		"socket": socket,
 		"ip": socket.request.connection.remoteAddress,
-		"room": null
+		"room": null,
+		"skipVoted": false
 	};
 
 	allUsers[socket.id] = newUser;

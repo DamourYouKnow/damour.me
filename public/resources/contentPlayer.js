@@ -25,16 +25,18 @@ $(document).ready(function() {
 	socket.on("joinRoomSuccess", function() {
 		console.log("Join successfull");
 		$("#roomTitle").html(
-			"<p>Share this room: " + window.location.protocol + "//"
-				+ window.location.hostname + "/player?room="
+			"<p>Share this room: " + window.location.protocol +
+				+ "//" +  "/player?room="
 				+ idFromUrl + "</p>"
 		);
 	});
 
 	socket.on("newRoom", function(id) {
-		window.location.href = window.location.protocol + "//"
-			+ window.location.hostname + "/player?room="
-			+ id;
+		var urlStr = window.location.protocol.toString() 
+			+ "//"
+			+ window.location.host + "/player?room=" + id;
+		console.log(urlStr);
+		window.location.href = urlStr;
 	});
 
 	socket.on("message", function(message) {
@@ -60,6 +62,10 @@ $(document).ready(function() {
 		for (var i = 0; i < queue.length; i++) {
 			$("#contentQueue").append("<p>" + queue[i].title + "<\p>");
 		}
+	});
+
+	$("#skipButton").click(function() {
+		socket.emit("skip");
 	});
 
 	// add song to queue if add button is pressed
