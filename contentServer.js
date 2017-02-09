@@ -10,7 +10,7 @@ var io = require("socket.io")(server);
 
 const ROOT = "./public/";
 const ROOM_ID_LENGTH = 5;
-const MAX_TIME = 10 * 60 * 1000;
+const MAX_TIME = 10 * 60 * 60 * 1000;
 const YT = "https://www.youtube.com/watch?v=";
 
 var key = fileOperations.loadJSON("ytkey.json").key
@@ -74,7 +74,16 @@ io.on("connection", function(socket) {
 	};
 
 	socket.on("skip", function() {
+		var room = socket.user.room;
 
+		// room owner can bypass skip vote
+		if (room.creator == socket.user) {
+			handleNextContent(room);
+		}
+		else {
+			room.skipVotes++;
+			// TODO detmermine vote conditions for skip
+		}
 	});
 
 	socket.on("joinRoom", function(roomId) {
@@ -112,10 +121,11 @@ io.on("connection", function(socket) {
 			"users": {},
 			"userCount": 1,
 			"skipVotes": 0,
-			"creator": ""
+			"creator": {}
 		};
 		rooms[id] = newRoom;
 		newRoom.users[socket.id] = socket.user;
+		newRoom.creator = socket.user;
 		socket.user.room = newRoom;
 		socket.emit("newRoom", id);
 	});
@@ -189,7 +199,12 @@ io.on("connection", function(socket) {
 
 function registerUser(socket) {
 	logMessage("Registering new user " + socket.id);
-	var newUser = {"socket": socket, "room": null};
+	var newUser = {
+		"socket": socket,
+		"ip": socket.request.connection.remoteAddress,
+		"room": null
+	};
+
 	allUsers[socket.id] = newUser;
 	socket.user = newUser;
 }
