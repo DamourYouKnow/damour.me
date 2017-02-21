@@ -147,6 +147,7 @@ io.on("connection", function(socket) {
 
 			updateQueue(room);
 			room.userCount++;
+			updateUserCount(room);
 			socket.emit("joinRoomSuccess");
 		}
 		else {
@@ -257,9 +258,17 @@ io.on("connection", function(socket) {
 					socket.user.room.creator = socket.user.room.users[userKey];
 				}
 			}
+
+			updateUserCount(socket.user.room);
 		}
 	});
 });
+
+function updateUserCount(room) {
+	for (var userKey in room.users) {
+		room.users[userKey].socket.emit("updateUserCount", room.userCount);
+	}
+}
 
 function registerUser(socket) {
 	logMessage("Registering new user " + socket.id);

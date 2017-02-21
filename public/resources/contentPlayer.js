@@ -31,7 +31,7 @@ $(document).ready(function() {
 	});
 
 	socket.on("newRoom", function(id) {
-		var urlStr = window.location.protocol.toString() 
+		var urlStr = window.location.protocol.toString()
 			+ "//"
 			+ window.location.host + "/player?room=" + id;
 		console.log(urlStr);
@@ -44,6 +44,10 @@ $(document).ready(function() {
 			$("#log").empty();
 		}, 2500);
 
+	});
+
+	socket.on("updateUserCount", function(userCount) {
+		$("#userCount").html(userCount + " user(s) online.");
 	});
 
 	socket.on("nextContent", function(data) {
