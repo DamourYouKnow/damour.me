@@ -3,7 +3,7 @@ var fileOperations = require("./fileOperations.js");
 var path = require("path");
 var url = require("url");
 var YouTube = require("youtube-node");
-var main = require("./app.js");
+var main = require("./damourme.js");
 var server = main.server;
 var app = main.app;
 var io = require("socket.io")(server);
@@ -192,11 +192,16 @@ io.on("connection", function(socket) {
 		// get song id from link
 		// TODO handle youtube.be/VIDEO_ID links
 		var urlObj = url.parse(link, true);
-		if (!urlObj.query.hasOwnProperty("v")) {
+		var id = urlObj.query.v;
+		if (link.startsWith("https://youtu.be/")) {
+			id = link.substring("https://youtu.be/".length);
+			console.log(id);
+		}
+		else if (!urlObj.query.hasOwnProperty("v")) {
 			socket.emit("message", "Error finding content.");
 			return;
 		}
-		var id = urlObj.query.v;
+
 
 		var yt = new YouTube();
 		yt.setKey(key);
@@ -204,7 +209,7 @@ io.on("connection", function(socket) {
 			var vid = result.items[0];
 
 			// check if song not found
-			if (error || vid.length == 0) {
+			if (error || vid == undefined || vid.length == 0) {
 				socket.emit("message", "Error finding content.");
 				logMessage(error);
 			}
@@ -214,7 +219,7 @@ io.on("connection", function(socket) {
 			}
 			// check if over max time
 			else if (convertTime(vid.contentDetails.duration).millis>MAX_TIME) {
-				socket.emit("message", "Content longer than 10 minutes.");
+				socket.emit("message", "Content longer than 10 hours.");
 			}
 			// check if livestream
 			else if (vid.snippet.liveBroadcastContent != "none") {
@@ -277,6 +282,10 @@ function createId(len) {
 		text += possible.charAt(Math.floor(Math.random() * possible.length));
 
 	return text;
+}
+
+function getTimeFromTimestamp(url) {
+	console.log("Unimplemented");
 }
 
 /*
