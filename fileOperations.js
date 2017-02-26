@@ -1,4 +1,5 @@
 var fs = require("fs");
+var path = require("path");
 
 var exports = module.exports = {};
 
@@ -24,4 +25,24 @@ object: Object - object to be saved in JSON
 */
 exports.saveJSON = function(filename, object) {
 	fs.writeFileSync(filename, JSON.stringify(object));
+};
+
+/*
+Gets a list of all folder names in a direcotry
+
+path: String - location of directory
+
+return: Array - list of folder names in directory
+*/
+exports.getFoldersInDirectory = function(path) {
+	var folders = [];
+
+	folders = fs.readdirSync(path, (err, files) => {
+		files.forEach(file => {
+			folders.push(file);
+			return folders
+ 		});
+	});
+
+	return folders;
 };

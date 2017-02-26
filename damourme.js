@@ -17,6 +17,7 @@ exports.app = app;
 var server = require("http").createServer(app);
 exports.server = server;
 var contentServer = require("./contentServer.js");
+var cardsServer = require("./cardsServer.js");
 
 server.listen(SERVER_PORT);
 
