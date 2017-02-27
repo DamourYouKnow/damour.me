@@ -2,21 +2,31 @@ var exports = module.exports = {};
 var fileOperations = require("./fileOperations.js");
 var path = require("path");
 var fs = require("fs");
-/*
 var main = require("./damourme.js");
 var server = main.server;
 var app = main.app;
 var io = require("socket.io")(server);
-*/
+
 
 const ROOT = "./public/";
 
 var cardPacks = loadCardPacks();
 
-var testPack = loadCardPacks()["test"];
-shuffle(testPack.questions);
-shuffle(testPack.responses);
+var testPack = newCardDeck("test");
 console.log(testPack);
+
+// TODO function prototype with list input that merges multiple packs
+function newCardDeck(packName) {
+	if (packName in cardPacks) {
+		var deck = copyCardPack(cardPacks[packName]);
+		shuffle(deck.questions);
+		shuffle(deck.responses);
+		return deck;
+	}
+
+	console.log("Invalid card pack");
+	return null;
+}
 
 function loadCardPacks() {
 	var cardPacks = {};
@@ -33,6 +43,13 @@ function loadCardPacks() {
 	return cardPacks;
 }
 
+function copyCardPack(cardPack) {
+	return {
+		"questions": copyList(cardPack.questions),
+		"responses": copyList(cardPack.responses)
+	};
+}
+
 function loadCardPack(path) {
 	var cardPack = {};
 	cardPack.questions = fileOperations.loadJSON(path + "questions.json");
@@ -47,6 +64,14 @@ function shuffle(list) {
 		list[i] = list[rand];
 		list[rand] = temp;
 	}
+}
+
+function copyList(list) {
+	var newList = [];
+	for (var i = 0; i < list.length; i++) {
+		newList.push(list[i]);
+	}
+	return newList;
 }
 
 /*
