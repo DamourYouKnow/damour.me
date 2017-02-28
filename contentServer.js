@@ -6,7 +6,7 @@ var YouTube = require("youtube-node");
 var main = require("./damourme.js");
 var server = main.server;
 var app = main.app;
-var io = require("socket.io")(server);
+var io = main.io;
 
 const ROOT = "./public/";
 const ROOM_ID_LENGTH = 5;
@@ -47,14 +47,14 @@ io.on("connection", function(socket) {
 		);
 		room.currentStart = Date.now();
 
-		var startTime = {};
-		startTime.millis = 0;
-
 		// send next song to each user in room and reset skips
 		for (var userKey in room.users) {
 			room.users[userKey].socket.emit(
 				"nextContent",
-				{"id": room.currentContent.id, "time": startTime}
+				{
+					"id": room.currentContent.id,
+					"time": room.currentContent.startAt
+				}
 			);
 			room.skipVotes = 0;
 			room.skipIps = new Set();
@@ -63,9 +63,12 @@ io.on("connection", function(socket) {
 
 		room.timer = setTimeout(
 			handleNextContent,
-			room.currentDuration.millis + 3000,
+			room.currentDuration.millis - room.currentContent.startAt.millis
+				+ 3000,
 			room
 		);
+
+		logMessage("Playing next song in queue");
 	};
 
 	var updateQueue = function(room) {
@@ -140,7 +143,10 @@ io.on("connection", function(socket) {
 			if (room.contentQueue.length >= 1) {
 				var content = {
 					"id": room.currentContent.id,
-					"time": {"millis": Date.now() - room.currentStart}
+					"time": {
+						"millis": Date.now() - room.currentStart
+								+ room.currentContent.startAt.millis
+					}
 				};
 				socket.emit("nextContent", content);
 			}
@@ -191,18 +197,15 @@ io.on("connection", function(socket) {
 		}
 
 		// get song id from link
-		// TODO handle youtube.be/VIDEO_ID links
 		var urlObj = url.parse(link, true);
 		var id = urlObj.query.v;
 		if (link.startsWith("https://youtu.be/")) {
-			id = link.substring("https://youtu.be/".length);
-			console.log(id);
+			id = urlObj.pathname.substring(1);
 		}
 		else if (!urlObj.query.hasOwnProperty("v")) {
 			socket.emit("message", "Error finding content.");
 			return;
 		}
-
 
 		var yt = new YouTube();
 		yt.setKey(key);
@@ -231,6 +234,19 @@ io.on("connection", function(socket) {
 				socket.emit("message", "Content not embeddable.");
 			}
 			else {
+				// get start time from query
+				if (urlObj.query.hasOwnProperty("t")) {
+					vid.startAt = convertTime(urlObj.query["t"]);
+				}
+				else {
+					vid.startAt = {
+						"hours": 0,
+						"minutes": 0,
+						"seconds": 0,
+						"millis": 0
+					};
+				}
+
 				logMessage("Adding video " + vid.snippet.title);
 				room.contentQueue.unshift(vid);
 				room.idQueue.unshift(vid.id);
@@ -301,29 +317,30 @@ function getTimeFromTimestamp(url) {
 Creates a time object from YouTube's duration string
 */
 function convertTime(time) {
+	time = time.toLowerCase();
 	var timeNew = {};
 	var hStr = "";
 	var mStr = "";
 	var sStr = "";
 	var c = time.length - 1;
 
-	if (time.charAt(c) == 'S') {
+	if (time.charAt(c) == 's') {
 		c--;
-		while (!isNaN(time.charAt(c))) {
+		while (!isNaN(time.charAt(c)) && c >= 0) {
 			sStr = time.charAt(c) + sStr;
 			c--;
 		}
 	}
-	if (time.charAt(c) == 'M') {
+	if (time.charAt(c) == 'm') {
 		c--;
-		while (!isNaN(time.charAt(c))) {
+		while (!isNaN(time.charAt(c)) && c >= 0) {
 			mStr = time.charAt(c) + mStr;
 			c--;
 		}
 	}
-	if (time.charAt(c) == 'H') {
+	if (time.charAt(c) == 'h') {
 		c--;
-		while (!isNaN(time.charAt(c))) {
+		while (!isNaN(time.charAt(c)) && c >= 0) {
 			hStr = time.charAt(c) + hStr;
 			c--;
 		}

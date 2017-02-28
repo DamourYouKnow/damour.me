@@ -5,15 +5,13 @@ var fs = require("fs");
 var main = require("./damourme.js");
 var server = main.server;
 var app = main.app;
-var io = require("socket.io")(server);
+var io = main.io;
+
 
 
 const ROOT = "./public/";
 
 var cardPacks = loadCardPacks();
-
-var testPack = newCardDeck("test");
-console.log(testPack);
 
 // TODO function prototype with list input that merges multiple packs
 function newCardDeck(packName) {
@@ -32,7 +30,6 @@ function loadCardPacks() {
 	var cardPacks = {};
 
 	var packNames = fileOperations.getFoldersInDirectory("./card_packs/");
-	console.log(packNames);
 
 	for (var p = 0; p < packNames.length; p++) {
 		cardPacks[packNames[p]] = loadCardPack(
