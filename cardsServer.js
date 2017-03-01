@@ -12,6 +12,29 @@ var io = main.io;
 const ROOT = "./public/";
 
 var cardPacks = loadCardPacks();
+var rooms = {};
+
+app.get("/cards", function(request, response) {
+	response.sendFile(path.join(__dirname, ROOT + "cards.html"));
+});
+
+
+function newRoom() {
+	var id = createId(5);
+	while (id in rooms) {
+		id = createId();
+	}
+
+	var room = {
+		userCount: 0,
+		users: {},
+		questions: [],
+		responses: [],
+		inProgress: false
+	};
+
+	rooms[id]
+}
 
 // TODO function prototype with list input that merges multiple packs
 function newCardDeck(packName) {
@@ -69,6 +92,16 @@ function copyList(list) {
 		newList.push(list[i]);
 	}
 	return newList;
+}
+
+function createId(len) {
+	var text = "";
+	var possible = "0123456789abcdefABCDEF";
+
+	for( var i=0; i < len; i++ )
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+	return text;
 }
 
 /*

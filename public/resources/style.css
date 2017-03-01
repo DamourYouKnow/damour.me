@@ -31,3 +31,28 @@ input {
 .success {
 	color: green;
 }
+
+.card {
+	display: table-cell;
+	width: 150px;
+	height: 200px;
+	margin-right: 10px;
+	padding-bottom: 10px;
+	top: 30px;
+	vertical-align: middle;
+	border-radius: 10px;
+	border-style: solid;
+}
+
+.whiteCard {
+	float: left;
+	background-color: white;
+	color: black;
+	border-color: white;
+}
+
+.blackCard {
+	background-color: black;
+	color: white;
+	border-color: black;
+}
