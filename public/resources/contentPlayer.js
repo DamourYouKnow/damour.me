@@ -61,9 +61,15 @@ $(document).ready(function() {
 	});
 
 	socket.on("updateQueue", function(queue) {
+		if (queue.length == 0) {
+			return;
+		}
+
 		$("#contentQueue").html("<p>Current queue:<\p>");
-		for (var i = 0; i < queue.length; i++) {
-			$("#contentQueue").append("<p>" + queue[i].title + "<\p>");
+		$("#contentQueue").append("<p><b>--> " + queue[0].title + "</b></p>");
+
+		for (var i = 1; i < queue.length; i++) {
+			$("#contentQueue").append("<p>" + queue[i].title + "</p>");
 		}
 	});
 
