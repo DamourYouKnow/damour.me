@@ -4,7 +4,7 @@ Client side code for content sharer
 author: DamourYouKnow
 */
 
-var socket = io();
+var socket = io("/player");
 
 $(document).ready(function() {
 	var url = window.location.href;

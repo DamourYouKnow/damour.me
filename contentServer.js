@@ -6,7 +6,7 @@ var YouTube = require("youtube-node");
 var main = require("./damourme.js");
 var server = main.server;
 var app = main.app;
-var io = main.io;
+var io = main.io.of("/player");
 
 const ROOT = "./public/";
 const ROOM_ID_LENGTH = 5;

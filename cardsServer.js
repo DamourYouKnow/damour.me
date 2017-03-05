@@ -5,7 +5,7 @@ var fs = require("fs");
 var main = require("./damourme.js");
 var server = main.server;
 var app = main.app;
-var io = main.io;
+var io = main.io.of("/cards");
 
 
 
@@ -16,6 +16,16 @@ var rooms = {};
 
 app.get("/cards", function(request, response) {
 	response.sendFile(path.join(__dirname, ROOT + "cards.html"));
+});
+
+io.on("connection", function(socket) {
+
+	/*
+	Handler or client disconnecting from chat
+	*/
+	socket.on("disconnect", function(data) {
+		logMessage("Cards client disconnected");
+	});
 });
 
 
@@ -115,4 +125,8 @@ return: Number - random integer
 function randomInteger(min, max) {
 	var rand = Math.round(Math.random() * (max - min) + min);
 	return rand;
+}
+
+function logMessage(message) {
+	console.log(new Date() + ": " + message);
 }
