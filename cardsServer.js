@@ -46,6 +46,26 @@ io.on("connection", function(socket) {
 	socket.on("disconnect", function(data) {
 		logMessage("Cards client disconnected");
 	});
+
+	socket.on("joinRoom", function(roomId) {
+		if (roomId in rooms) {
+			logMessage("User " + socket.id + " joined room " + roomId);
+			var room = rooms[roomId];
+			room.users[socket.id] = socket.user;
+			socket.user.room = room;
+			room.userCount++;
+			socket.emit("joinRoomSuccess");
+		}
+		else {
+			socket.emit("joinRoomFailed");
+		}
+	});
+
+	socket.on("createRoom", function() {
+		var room = newRoom();
+		socket.user.room = room;
+		socket.emit("newRoom", room.id);
+	});
 });
 
 /*
@@ -97,6 +117,8 @@ function newRoom() {
 		id = createId();
 	}
 
+	logMessage("Creating room " + id);
+
 	var room = {
 		"userCount": 0,
 		"users": {},
@@ -104,10 +126,12 @@ function newRoom() {
 		"responses": [],
 		"pickPhase": false,
 		"czarPhase": false,
-		"roundTimer": null
+		"roundTimer": null,
+		"id": id
 	};
 
-	rooms[id]
+	rooms[id] = room;
+	return room;
 }
 
 /*

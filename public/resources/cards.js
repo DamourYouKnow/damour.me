@@ -5,6 +5,7 @@ author: DamourYouKnow
 */
 
 var socket = io("/cards");
+var hand = [];
 
 $(document).ready(function() {
 	var url = window.location.href;
@@ -38,4 +39,14 @@ $(document).ready(function() {
 		window.location.href = urlStr;
 	});
 
+	socket.on("updateHand", function(cards) {
+		hand = cards;
+		$("#playerHand").empty();
+
+		for (var i = 0; i < hand.length; i++) {
+			$("#playerHand").append(
+				"<div class="card whiteCard">" + hand[i] + "</div>"
+			);
+		}
+	});
 });
