@@ -1,0 +1,46 @@
+a:link {
+   font-family: Arial, sans-serif;
+  font-size: 20px;
+}
+a:visited {
+  color:#a4a4a4;
+}
+#main_page_links {
+  text-align: center;
+}
+#player {
+  color:#a4a4a4;
+  display: inline-block;
+  padding: 10px;
+}
+#converter {
+    color:#a4a4a4;
+    display: inline-block;
+    padding: 10px;
+}
+#github {
+    color:#a4a4a4;
+    display: inline-block;
+    padding: 10px;
+}
+#discord {
+    color:#a4a4a4;
+    display: inline-block;
+    padding: 10px;
+}
+#twitch {
+    color:#a4a4a4;
+    display: inline-block;
+    padding: 10px;
+}
+#sellout {
+  font-family:"comic sans ms";
+  font-size:72px;
+  color:#ff69b4;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  position: fixed;
+  align-items: center;
+  justify-content: center;
+}

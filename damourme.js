@@ -44,6 +44,12 @@ app.get("/regionalIndicatorConverter", function(request, response) {
 	);
 });
 
+app.get("/kachow", function(request, response) {
+	response.sendFile(
+		path.join(__dirname, ROOT + "kachow.html")
+	);
+});
+
 /*
 Handle static requests
 */

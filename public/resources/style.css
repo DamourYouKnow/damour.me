@@ -24,6 +24,18 @@ input {
 	font-size: inherit;
 }
 
+.roundButton {
+	background-color: pink;
+	text-align: center;
+	font-family: inherit;
+	font-size: 18px;
+	border: 2px solid white;
+	height: 150px;
+	width: 150px;
+	border-radius: 75px;
+	margin-left: 30px;
+}
+
 .warning {
 	color: red;
 }
